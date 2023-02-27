@@ -138,7 +138,6 @@ void handleCardDetected() {
         Serial.println(cardid);
         const char * mes = (const char *) String(cardid).c_str();
         Serial.println(mes);
-        Serial.println("hey Sien kan iets");
         client.publish("nieuwpoort/tags", mes);
       }
       Serial.println("");
