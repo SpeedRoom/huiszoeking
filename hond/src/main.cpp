@@ -295,7 +295,7 @@ void loop()
     // addrSender = nullptr;
   }
   Serial.print("...");
-  //TODO: indien et zo is, laat em blaffen, versterken en speaker nodig
+  //TODO: indien et zo is, laat em blaff  en, versterken en speaker nodig
 
   //TODO: laat em luider blaffen als de juiste rfid tag gelezen wordt
 }
