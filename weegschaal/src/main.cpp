@@ -136,6 +136,34 @@ void handleCardDetected() {
       nfc.PrintHex(uid, uidLength);
       
 
+      if(uidLength == 7){
+        uint64_t cardid = uid[0];
+        cardid <<= 8;
+        cardid |= uid[1];
+        cardid <<= 8;
+        cardid |= uid[2];  
+        cardid <<= 8;
+        cardid |= uid[3]; 
+        cardid <<= 8;
+        cardid |= uid[4]; 
+        cardid <<= 8;
+        cardid |= uid[5]; 
+        cardid <<= 8;
+        cardid |= uid[6];
+        Serial.print("Card ID NUMERIC Value: ");
+        Serial.println(cardid);
+        if(cardid == 1377149624601984){
+          card1 = true;
+        }
+        if(cardid == 1384850500963712){
+          card2 = true;
+        }
+        if(cardid == 1392551377325440){
+          card3 = true;
+        }
+      }
+      
+
 
 
       if (uidLength == 4)
@@ -154,15 +182,6 @@ void handleCardDetected() {
         const char * mes = (const char *) String(cardid).c_str();
         Serial.println(mes);
         client.publish("nieuwpoort/tags", mes);
-        if(cardid == 4179560643){
-          card1 = true;
-        }
-        if(cardid == 1232466369){
-          card2 = true;
-        }
-        if(cardid == 4184016322){
-          card3 = true;
-        }
       }
       Serial.println("");
 
