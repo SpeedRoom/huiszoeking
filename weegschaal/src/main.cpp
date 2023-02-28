@@ -23,9 +23,14 @@ Based on readMifareClassicIrq.pde by Adafruit
 static void startListeningToNFC();
 static void handleCardDetected();
 
+bool card1 = false;
+bool card2 = false;
+bool card3 = false;
+
 // Pins used for I2C IRQ
 #define PN532_IRQ   4
 #define PN532_RESET 5 
+#define led 2
 
 const int DELAY_BETWEEN_CARDS = 500;
 long timeLastCardRead = 0;
@@ -50,6 +55,8 @@ PubSubClient client(espClient);
 Adafruit_PN532 nfc(PN532_IRQ, PN532_RESET);
 
 void setup(void) {
+  pinMode(led, OUTPUT);
+  digitalWrite(led,LOW);
   Serial.begin(115200); //Adapt the platformio.ini with correct monitor_speed
 
   Serial.println("Begin NFC532 Scanning Software.");
@@ -72,8 +79,7 @@ void setup(void) {
   startListeningToNFC();
 }
 
-void loop(void) {
-  
+void loop(void) {  
   if (readerDisabled) {
     if (millis() - timeLastCardRead > DELAY_BETWEEN_CARDS) {
       readerDisabled = false;
@@ -90,6 +96,15 @@ void loop(void) {
   
     irqPrev = irqCurr;
   }
+
+
+
+  if(card1 == true && card2 == true && card3 == true){
+    digitalWrite(led, HIGH);
+  }
+
+
+
 }
 
 void startListeningToNFC() {
@@ -139,6 +154,15 @@ void handleCardDetected() {
         const char * mes = (const char *) String(cardid).c_str();
         Serial.println(mes);
         client.publish("nieuwpoort/tags", mes);
+        if(cardid == 4179560643){
+          card1 = true;
+        }
+        if(cardid == 1232466369){
+          card2 = true;
+        }
+        if(cardid == 4184016322){
+          card3 = true;
+        }
       }
       Serial.println("");
 
