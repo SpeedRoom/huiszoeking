@@ -1,19 +1,14 @@
 #include <Arduino.h>
 #include "sys/time.h"
-
 #include "BLEDevice.h"
-
 #include "BLEUtils.h"
-
 #include "BLEServer.h"
-
 #include "BLEBeacon.h"
-
 #include "esp_sleep.h"
 #include <BLEAdvertisedDevice.h>
 #include <BLEScan.h>
 
-// #define BEACON false
+#define BEACON false
 
 #ifndef BEACON
 
@@ -94,7 +89,7 @@ private:
   {
     if (! (getUuid(device).equals("2686F39C-BADA-4658-854A-A62E7E5E8B8") || getUuid(device).equals("2686F39C-BADA-4658-854A-A62E7E5E8B8D"))){
       Serial.printf("addr:%s rssi:%d uuid:%s power:%d\r\n",
-                    device.getAddress().toString().c_str(),
+                    device.getAddress().toString().c_str(), //BELANGRIJK! dit is het adres afhankelijk van verzender!
                     device.getRSSI(),
                     getUuid(device).c_str(),
                     *(signed char *)&device.getManufacturerData().c_str()[24]);
