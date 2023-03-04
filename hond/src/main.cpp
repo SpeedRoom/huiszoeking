@@ -33,7 +33,8 @@ PubSubClient client(espClient);
 uint64_t cardidSticker;
 bool stickerDetected = false;
 bool monsterDetected = false;
-const char* addrSender = nullptr;
+const char * addrSender;
+bool freeFlag = true;
 
 
 // valid_tags = 
@@ -124,12 +125,14 @@ private:
   void printIBeacon(BLEAdvertisedDevice device)
   {
     if (! (getUuid(device).equals("2686F39C-BADA-4658-854A-A62E7E5E8B8") || getUuid(device).equals("2686F39C-BADA-4658-854A-A62E7E5E8B8D"))){
-      addrSender = (const char*) device.getAddress().toString().c_str();
+      addrSender =  strdup(device.getAddress().toString().c_str());
+      freeFlag = false;
       Serial.printf("addr:%s rssi:%d uuid:%s power:%d\r\n",
                     device.getAddress().toString().c_str(), //BELANGRIJK! dit is het adres afhankelijk van verzender!
                     device.getRSSI(),
                     getUuid(device).c_str(),
                     *(signed char *)&device.getManufacturerData().c_str()[24]);
+      Serial.println("");
     }
   }
 };
@@ -266,7 +269,7 @@ void loop()
   
   if(stickerDetected == true && cardidSticker == 1138283286187137){
     stickerDetected = false;
-    monsterDetected = true; //TODO, opt einde vant spel moet da weer op false gezet worden
+    monsterDetected = true; //TODO, opt einde vant spel moet da weer op false gezet worden, als alle zakjes gevonden zin dus wss.
     Serial.println("heeft gesnuffeld");
     cardidSticker = 0;
   }
@@ -288,14 +291,19 @@ void loop()
     stickerDetected = false;
     Serial.println("luid BLAFFEN");
   }
-  const char* x = "94:b9:7e:65:a4:3a";//TODO: veel te rare fouten!!!
-  if(monsterDetected == true && (strcmp(addrSender,x) == 0 || strcmp(addrSender,x) == 0 || strcmp(addrSender,x) == 0)){
-    //TODO: hier moet ie blaffen
-    Serial.println("stil BLAFFEN");
-    // addrSender = nullptr;
+  const char * x = "94:b9:7e:65:a4:3a";//TODO: als deze gevonden is, adres veranderen naar volgend drugszakje
+  if(freeFlag == false){
+    Serial.printf(addrSender);
+    // if(monsterDetected == true && (strcmp(addrSender,x) == 0 || strcmp(addrSender,x) == 0 || strcmp(addrSender,x) == 0)){
+    if(monsterDetected == true && strcmp(x,addrSender) == 0){
+      //TODO: hier moet ie blaffen
+      Serial.println("stil BLAFFEN");
+    }
   }
   Serial.print("...");
-  //TODO: indien et zo is, laat em blaff  en, versterken en speaker nodig
 
-  //TODO: laat em luider blaffen als de juiste rfid tag gelezen wordt
+  if(freeFlag == false){
+    free((char*)addrSender);
+    freeFlag = true;
+  }
 }
