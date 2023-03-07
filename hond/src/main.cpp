@@ -21,6 +21,7 @@ static void handleCardDetected();
 #define PN532_IRQ   4
 #define PN532_RESET 5 
 
+int rssi;
 const int DELAY_BETWEEN_CARDS = 500;
 long timeLastCardRead = 0;
 boolean readerDisabled = false;
@@ -139,6 +140,7 @@ private:
                     getUuid(device).c_str(),
                     *(signed char *)&device.getManufacturerData().c_str()[24]);
       Serial.println("");
+      rssi = device.getRSSI();
     }
   }
 };
@@ -318,9 +320,10 @@ void loop()
   if(freeFlag == false){
     Serial.printf(addrSender);
     // if(monsterDetected == true && (strcmp(addrSender,x) == 0 || strcmp(addrSender,x) == 0 || strcmp(addrSender,x) == 0)){
-    if(monsterDetected == true && strcmp(x,addrSender) == 0){
+    if(monsterDetected == true && strcmp(x,addrSender) == 0 && rssi > -59){
       //TODO: hier moet ie blaffen
       Serial.println("stil BLAFFEN");
+      Serial.println(rssi);
       toneFrequency = 500;
       tellen = 0;
     }
