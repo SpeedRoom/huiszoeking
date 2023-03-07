@@ -13,6 +13,7 @@ should be as follows:
 Based on readMifareClassicIrq.pde by Adafruit
 */
 /**************************************************************************/
+
 #include <Arduino.h>
 #include <Wire.h>
 #include <SPI.h>
@@ -20,12 +21,23 @@ Based on readMifareClassicIrq.pde by Adafruit
 #include "WiFi.h"
 #include "PubSubClient.h"
 
+#include "HX711.h"
+
+
+
 static void startListeningToNFC();
 static void handleCardDetected();
 
 bool card1 = false;
 bool card2 = false;
 bool card3 = false;
+bool detected1 = false;
+bool detected2 = false;
+bool detected3 = false;
+
+long zero;
+long value;
+
 
 // Pins used for I2C IRQ
 #define PN532_IRQ   4
@@ -40,6 +52,11 @@ int irqPrev;
 
 WiFiClient espClient;
 PubSubClient client(espClient);
+// HX711 circuit wiring
+const int LOADCELL_DOUT_PIN = 17;
+const int LOADCELL_SCK_PIN = 16;
+
+HX711 scale;
 
 // valid_tags = 
 // 0x02 0x82 0x00 0x08 0x7B 0x2B 0xC3
@@ -77,6 +94,8 @@ void setup(void) {
   nfc.SAMConfig();
 
   startListeningToNFC();
+
+  scale.begin(LOADCELL_DOUT_PIN, LOADCELL_SCK_PIN);
 }
 
 void loop(void) {  
@@ -97,10 +116,72 @@ void loop(void) {
     irqPrev = irqCurr;
   }
 
+  if(card1 == true and detected1 !=true){
+    Serial.println("foudn nr1");
+    if (scale.wait_ready_timeout(100)) {
+    zero = scale.read();
+    Serial.println("zero gemeten");
+    delay(100);
+    }
+    if (scale.wait_ready_timeout(100)) {
+    value = scale.read();
+    Serial.println(value);
+    }
+    Serial.println(value-zero);
+    while(value-zero < 3000){
+      if (scale.wait_ready_timeout(100)) {
+      value = scale.read();
+      }
+      Serial.println(value-zero);
+    }
+    Serial.println("joepie zakje nr 1 licht in de bak");
+    detected1 = true;
+    card1 = false;
+  }
 
-
-  if(card1 == true && card2 == true && card3 == true){
-    digitalWrite(led, HIGH);
+  if(card2 == true and detected2 !=true){
+    Serial.println("foudn nr2");
+    if (scale.wait_ready_timeout(100)) {
+    zero = scale.read();
+    Serial.println("zero gemeten");
+    delay(100);
+    }
+    if (scale.wait_ready_timeout(100)) {
+    value = scale.read();
+    Serial.println(value);
+    }
+    Serial.println(value-zero);
+    while(value-zero < 3000){
+      if (scale.wait_ready_timeout(100)) {
+      value = scale.read();
+      }
+      Serial.println(value-zero);
+    }
+    Serial.println("joepie zakje nr 1 licht in de bak");
+    detected2 = true;
+    card2 = false;
+  }
+  
+  if(card3 == true and detected3 !=true){
+    if (scale.wait_ready_timeout(100)) {
+    zero = scale.read();
+    Serial.println("zero gemeten");
+    delay(100);
+    }
+    if (scale.wait_ready_timeout(100)) {
+    value = scale.read();
+    Serial.println(value);
+    }
+    Serial.println(value-zero);
+    while(value-zero < 3000){
+      if (scale.wait_ready_timeout(100)) {
+      value = scale.read();
+      }
+      Serial.println(value-zero);
+    }
+    Serial.println("joepie zakje nr 1 licht in de bak");
+    detected3 = true;
+    card3 = false;
   }
 
 
@@ -152,13 +233,13 @@ void handleCardDetected() {
         cardid |= uid[6];
         Serial.print("Card ID NUMERIC Value: ");
         Serial.println(cardid);
-        if(cardid == 1377149624601984){
+        if(cardid == 1157230119177600){
           card1 = true;
         }
-        if(cardid == 1384850500963712){
+        if(cardid == 1139637933133184){
           card2 = true;
         }
-        if(cardid == 1392551377325440){
+        if(cardid == 1141832661421440){
           card3 = true;
         }
       }
@@ -193,3 +274,31 @@ void handleCardDetected() {
     // The reader will be enabled again after DELAY_BETWEEN_CARDS ms will pass.
     readerDisabled = true;
 }
+/*
+#include "HX711.h"
+
+// HX711 circuit wiring
+const int LOADCELL_DOUT_PIN = 16;
+const int LOADCELL_SCK_PIN = 4;
+
+HX711 scale;
+
+void setup() {
+  Serial.begin(115200);
+  scale.begin(LOADCELL_DOUT_PIN, LOADCELL_SCK_PIN);
+}
+
+void loop() {
+
+  if (scale.wait_ready_timeout(100)) {
+    long reading = scale.read();
+    Serial.print("HX711 reading: ");
+    Serial.println(reading);
+  } else {
+    Serial.println("HX711 not found.");
+  }
+
+  delay(150);
+  
+}
+*/
