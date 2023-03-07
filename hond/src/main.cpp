@@ -320,7 +320,7 @@ void loop()
   if(freeFlag == false){
     Serial.printf(addrSender);
     // if(monsterDetected == true && (strcmp(addrSender,x) == 0 || strcmp(addrSender,x) == 0 || strcmp(addrSender,x) == 0)){
-    if(monsterDetected == true && strcmp(x,addrSender) == 0 && rssi > -59){
+    if(monsterDetected == true && strcmp(x,addrSender) == 0 && rssi > -65){
       //TODO: hier moet ie blaffen
       Serial.println("stil BLAFFEN");
       Serial.println(rssi);
