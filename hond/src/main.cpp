@@ -37,6 +37,12 @@ const char * addrSender;
 bool freeFlag = true;
 
 
+#include <esp32-hal-ledc.h>
+
+const int speakerPin = 25; // use any PWM-capable output pin
+int toneFrequency = 0;  // set the tone frequency in Hz
+int tellen;
+
 // valid_tags = 
 // 0x02 0x82 0x00 0x08 0x7B 0x2B 0xC3
 // 0x04 0x9C 0x49 0x6A 0x99 0x5B 0x80 
@@ -214,6 +220,9 @@ void handleCardDetected() {
 
 void setup()
 {
+  ledcSetup(0, 10000, 8); // set PWM frequency to 10kHz, resolution to 8 bits
+  ledcAttachPin(speakerPin, 0); // attach PWM output to the speaker pin
+
   Serial.begin(115200); //Adapt the platformio.ini with correct monitor_speed
 
   BLEDevice::init("");
@@ -243,6 +252,14 @@ void setup()
 
 void loop()
 {
+
+  if((toneFrequency != 0) and (tellen < 1)){
+    ledcWriteTone(0, toneFrequency);
+    tellen = tellen +1;
+  }
+  else{
+    ledcWrite(0,0);
+  }
   //ontvangen signaal
   BLEScan *scan = BLEDevice::getScan();
   scan->setAdvertisedDeviceCallbacks(new IBeaconAdvertised(), true);
@@ -278,26 +295,34 @@ void loop()
     //hier sticker 2 gedetecteerd // TODO: hier moet ie dus nog luider/wilder blaffen
     stickerDetected = false;
     Serial.println("luid BLAFFEN");
+    toneFrequency = 3000;
+    tellen = 0;
   }
 
   if(stickerDetected == true && monsterDetected == true && cardidSticker == 1384850500963712){
     //hier sticker 3 gedetecteerd // TODO: hier moet ie dus nog luider blaffen
     stickerDetected = false;
     Serial.println("luid BLAFFEN");
+    toneFrequency = 3000;
+    tellen = 0;
   }
 
   if(stickerDetected == true && monsterDetected == true && cardidSticker == 1377149624601984){
     //hier sticker 4 gedetecteerd // TODO: hier moet ie dus nog luider blaffen
     stickerDetected = false;
     Serial.println("luid BLAFFEN");
+    toneFrequency = 3000;
+    tellen = 0;
   }
-  const char * x = "94:b9:7e:65:a4:3a";//TODO: als deze gevonden is, adres veranderen naar volgend drugszakje
+  const char * x = "7c:9e:bd:2a:fc:1e";//TODO: als deze gevonden is, adres veranderen naar volgend drugszakje
   if(freeFlag == false){
     Serial.printf(addrSender);
     // if(monsterDetected == true && (strcmp(addrSender,x) == 0 || strcmp(addrSender,x) == 0 || strcmp(addrSender,x) == 0)){
     if(monsterDetected == true && strcmp(x,addrSender) == 0){
       //TODO: hier moet ie blaffen
       Serial.println("stil BLAFFEN");
+      toneFrequency = 500;
+      tellen = 0;
     }
   }
   Serial.print("...");
