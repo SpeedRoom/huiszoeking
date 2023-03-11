@@ -21,6 +21,8 @@ static void handleCardDetected();
 #define PN532_IRQ   4
 #define PN532_RESET 5 
 
+int countDevices = 0;
+int sum_rssi = 0;
 int rssi;
 const int DELAY_BETWEEN_CARDS = 500;
 long timeLastCardRead = 0;
@@ -67,6 +69,7 @@ public:
       return;
     }
     printIBeacon(device);
+    countDevices +=1;
   }
 
 private:
@@ -134,13 +137,14 @@ private:
     if (! (getUuid(device).equals("2686F39C-BADA-4658-854A-A62E7E5E8B8") || getUuid(device).equals("2686F39C-BADA-4658-854A-A62E7E5E8B8D"))){
       addrSender =  strdup(device.getAddress().toString().c_str());
       freeFlag = false;
+      Serial.println("");
       Serial.printf("addr:%s rssi:%d uuid:%s power:%d\r\n",
                     device.getAddress().toString().c_str(), //BELANGRIJK! dit is het adres afhankelijk van verzender!
                     device.getRSSI(),
                     getUuid(device).c_str(),
                     *(signed char *)&device.getManufacturerData().c_str()[24]);
       Serial.println("");
-      rssi = device.getRSSI();
+      sum_rssi += device.getRSSI();
     }
   }
 };
@@ -210,7 +214,7 @@ void handleCardDetected() {
         client.publish("nieuwpoort/tags", mes);
       }
       Serial.println("");
-
+      success = false;
       
 
       timeLastCardRead = millis();
@@ -262,7 +266,9 @@ void loop()
   else{
     ledcWrite(0,0);
   }
+
   //ontvangen signaal
+  
   BLEScan *scan = BLEDevice::getScan();
   scan->setAdvertisedDeviceCallbacks(new IBeaconAdvertised(), true);
   scan->setActiveScan(true);
@@ -317,13 +323,19 @@ void loop()
     tellen = 0;
   }
   const char * x = "7c:9e:bd:2a:fc:1e";//TODO: als deze gevonden is, adres veranderen naar volgend drugszakje
-  if(freeFlag == false){
+  if(freeFlag == false && countDevices >= 5){ //countdevices moet aan 5 zijn om gemiddelde daaruit te berekenen
+    rssi = (int) sum_rssi / countDevices;
+    rssi = rssi + 30;
+    rssi = (int) rssi / 4;
+    countDevices = 0;
+    sum_rssi = 0;
     Serial.printf(addrSender);
+    Serial.println("");
+    Serial.println(rssi);
     // if(monsterDetected == true && (strcmp(addrSender,x) == 0 || strcmp(addrSender,x) == 0 || strcmp(addrSender,x) == 0)){
     if(monsterDetected == true && strcmp(x,addrSender) == 0 && rssi > -65){
       //TODO: hier moet ie blaffen
       Serial.println("stil BLAFFEN");
-      Serial.println(rssi);
       toneFrequency = 500;
       tellen = 0;
     }

@@ -112,7 +112,7 @@ void loop()
 }
 #else
 
-#define GPIO_DEEP_SLEEP_DURATION 3 // sleep x seconds and then wake up
+#define GPIO_DEEP_SLEEP_DURATION 0.2 // sleep x seconds and then wake up
 
 RTC_DATA_ATTR static time_t last; // remember last boot in RTC Memory
 
