@@ -29,6 +29,7 @@ void setup()
   file = new AudioFileSourcePROGMEM( enigma_mod, sizeof(enigma_mod) );
   out = new AudioOutputI2S(0, 1); //Uncomment this line, comment the next one to use the internal DAC channel 1 (pin25) on ESP32
   // out = new AudioOutputI2S();
+  out->SetGain(4); //max gain is 4
   mod = new AudioGeneratorMOD();
   mod->SetBufferSize(3*1024);
   mod->SetSampleRate(44100);
