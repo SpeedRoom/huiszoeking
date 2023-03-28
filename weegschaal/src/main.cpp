@@ -14,16 +14,21 @@ Based on readMifareClassicIrq.pde by Adafruit
 */
 /**************************************************************************/
 
+// naam esp: espweegschaal
+// wachtwoord esp: espweegschaal
+
 #include <Arduino.h>
 #include <Wire.h>
 #include <SPI.h>
 #include <Adafruit_PN532.h>
 #include "WiFi.h"
 #include "PubSubClient.h"
+#include "OTAlib.h"
 
 #include "HX711.h"
 
-
+//OTA
+OTAlib ota("NETGEAR68", "excitedtuba713");
 
 static void startListeningToNFC();
 static void handleCardDetected();
@@ -72,6 +77,11 @@ HX711 scale;
 Adafruit_PN532 nfc(PN532_IRQ, PN532_RESET);
 
 void setup(void) {
+  // OTA
+  ota.setHostname("espweegschaal");  
+  ota.setPassword("espweegschaal");
+  ota.begin();
+
   pinMode(led, OUTPUT);
   digitalWrite(led,LOW);
   Serial.begin(115200); //Adapt the platformio.ini with correct monitor_speed
