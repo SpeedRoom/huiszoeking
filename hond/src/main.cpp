@@ -1,3 +1,6 @@
+// naam esp: esphond
+// wachtwoord esp: esphond
+
 #include <Arduino.h>
 #include "sys/time.h"
 #include "BLEDevice.h"
@@ -13,6 +16,11 @@
 #include <Adafruit_PN532.h>
 #include "WiFi.h"
 #include "PubSubClient.h"
+#include <WiFi.h>
+#include "OTAlib.h"
+
+//OTA
+OTAlib ota("NETGEAR68", "excitedtuba713");
 
 static void startListeningToNFC();
 static void handleCardDetected();
@@ -226,6 +234,11 @@ void handleCardDetected() {
 
 void setup()
 {
+  // OTA
+  ota.setHostname("esphond");  
+  ota.setPassword("esphond");
+  ota.begin();
+
   ledcSetup(0, 10000, 8); // set PWM frequency to 10kHz, resolution to 8 bits
   ledcAttachPin(speakerPin, 0); // attach PWM output to the speaker pin
 
