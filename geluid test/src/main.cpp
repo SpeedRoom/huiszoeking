@@ -1,3 +1,5 @@
+// https://github.com/earlephilhower/ESP8266Audio
+
 #include <Arduino.h>
 #include "AudioFileSourcePROGMEM.h"
 #include "AudioGeneratorMOD.h"
@@ -17,6 +19,7 @@
 
 AudioGeneratorMOD *mod;
 AudioFileSourcePROGMEM *file;
+AudioFileSourcePROGMEM *file2;
 AudioOutputI2S *out;
 
 void setup()
@@ -26,7 +29,7 @@ void setup()
   delay(1000);
 
   audioLogger = &Serial;
-  file = new AudioFileSourcePROGMEM( enigma_mod, sizeof(enigma_mod) );
+  file = new AudioFileSourcePROGMEM(enigma_mod, sizeof(enigma_mod) );
   out = new AudioOutputI2S(0, 1); //Uncomment this line, comment the next one to use the internal DAC channel 1 (pin25) on ESP32
   // out = new AudioOutputI2S();
   out->SetGain(4); //max gain is 4
@@ -39,10 +42,19 @@ void setup()
 
 void loop()
 {
+  
   if (mod->isRunning()) {
-    if (!mod->loop()) mod->stop();
+    if (!mod->loop()) mod->stop(); //mod->stop() moet niet echt denk ik
   } else {
     Serial.printf("MOD done\n");
     delay(1000);
+    file->close();
+    delete file;
+    file = new AudioFileSourcePROGMEM(enigma_mod, sizeof(enigma_mod));
+    mod->begin(file, out);
+    //kheb lik geen andere manier gevonden dan telkens nieuwe file aan te maken. je kan pointer lik wel op 0 zetten door seek functie, 
+    //mo da werkt lik nie om 1 of andere reden dak nu nog nie heb gevonden. opzich is da zo erg nie, we gaan er wel op moeten letten 
+    //dat file eerst ingeladen/gemaakt is met new en dan gain te bepalen(max 4) met afstand. zodat geluid nie achter komt
   }
+  Serial.printf("test");
 }
