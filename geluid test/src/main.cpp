@@ -4,6 +4,11 @@
 #include "AudioFileSourcePROGMEM.h"
 #include "AudioGeneratorMOD.h"
 #include "AudioOutputI2S.h"
+#include "OTAlib.h"
+
+//OTA
+OTAlib ota("192.168.1.35", "excitedtuba713"); //TODO werkt nog nie, over the air
+
 #if defined(ARDUINO_ARCH_RP2040)
     #define WIFI_OFF
     class __x { public: __x() {}; void mode() {}; };
@@ -24,6 +29,10 @@ AudioOutputI2S *out;
 
 void setup()
 {
+  ota.setHostname("esphond");  
+  ota.setPassword("esphond");
+  ota.begin();
+
   WiFi.mode(WIFI_OFF); //WiFi.forceSleepBegin();
   Serial.begin(115200);
   delay(1000);
