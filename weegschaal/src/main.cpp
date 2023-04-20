@@ -48,6 +48,7 @@ long value;
 #define PN532_IRQ   4
 #define PN532_RESET 5 
 #define led 2
+#define relais 32
 
 const int DELAY_BETWEEN_CARDS = 500;
 long timeLastCardRead = 0;
@@ -59,7 +60,7 @@ WiFiClient espClient;
 PubSubClient client(espClient);
 // HX711 circuit wiring
 const int LOADCELL_DOUT_PIN = 17;
-const int LOADCELL_SCK_PIN = 16;
+const int LOADCELL_SCK_PIN = 18;
 
 HX711 scale;
 
@@ -78,11 +79,12 @@ Adafruit_PN532 nfc(PN532_IRQ, PN532_RESET);
 
 void setup(void) {
   // OTA
-  ota.setHostname("espweegschaal");  
-  ota.setPassword("espweegschaal");
-  ota.begin();
+  //ota.setHostname("espweegschaal");  
+  //ota.setPassword("espweegschaal");
+  //ota.begin();
 
   pinMode(led, OUTPUT);
+  pinMode(relais,OUTPUT);
   digitalWrite(led,LOW);
   Serial.begin(115200); //Adapt the platformio.ini with correct monitor_speed
 
@@ -106,6 +108,11 @@ void setup(void) {
   startListeningToNFC();
 
   scale.begin(LOADCELL_DOUT_PIN, LOADCELL_SCK_PIN);
+  digitalWrite(relais,HIGH);
+  Serial.println("relais aan");
+  delay(2000);
+  digitalWrite(relais,LOW);
+  Serial.println("relais uit");
 }
 
 void loop(void) {  
@@ -145,6 +152,7 @@ void loop(void) {
       Serial.println(value-zero);
     }
     Serial.println("joepie zakje nr 1 licht in de bak");
+    digitalWrite(relais,HIGH);
     detected1 = true;
     card1 = false;
   }
@@ -167,7 +175,8 @@ void loop(void) {
       }
       Serial.println(value-zero);
     }
-    Serial.println("joepie zakje nr 1 licht in de bak");
+    Serial.println("joepie zakje nr 2 licht in de bak");
+    digitalWrite(relais,HIGH);
     detected2 = true;
     card2 = false;
   }
@@ -189,7 +198,8 @@ void loop(void) {
       }
       Serial.println(value-zero);
     }
-    Serial.println("joepie zakje nr 1 licht in de bak");
+    Serial.println("joepie zakje nr 3 licht in de bak");
+    digitalWrite(relais,HIGH);
     detected3 = true;
     card3 = false;
   }
