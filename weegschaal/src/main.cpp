@@ -84,7 +84,7 @@ void setup(void) {
   //ota.begin();
 
   pinMode(led, OUTPUT);
-  pinMode(relais,OUTPUT);
+  pinMode(32,OUTPUT);
   digitalWrite(led,LOW);
   Serial.begin(115200); //Adapt the platformio.ini with correct monitor_speed
 
@@ -108,10 +108,10 @@ void setup(void) {
   startListeningToNFC();
 
   scale.begin(LOADCELL_DOUT_PIN, LOADCELL_SCK_PIN);
-  digitalWrite(relais,HIGH);
+  digitalWrite(32,HIGH);
   Serial.println("relais aan");
   delay(2000);
-  digitalWrite(relais,LOW);
+  digitalWrite(32,LOW);
   Serial.println("relais uit");
 }
 
@@ -152,7 +152,7 @@ void loop(void) {
       Serial.println(value-zero);
     }
     Serial.println("joepie zakje nr 1 licht in de bak");
-    digitalWrite(relais,HIGH);
+    digitalWrite(32,HIGH);
     detected1 = true;
     card1 = false;
   }
