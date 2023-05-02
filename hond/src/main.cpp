@@ -2,7 +2,6 @@
 // wachtwoord esp: esphond
 
 #include <Arduino.h>
-#include "sys/time.h"
 #include "BLEDevice.h"
 #include "BLEUtils.h"
 #include "BLEServer.h"
@@ -17,10 +16,10 @@
 #include "WiFi.h"
 #include "PubSubClient.h"
 #include <WiFi.h>
-#include "OTAlib.h"
+// #include "OTAlib.h"
 
 //OTA
-OTAlib ota("NETGEAR68", "excitedtuba713");
+// OTAlib ota("NETGEAR68", "excitedtuba713");
 
 static void startListeningToNFC();
 static void handleCardDetected();
@@ -47,8 +46,9 @@ bool monsterDetected = false;
 const char * addrSender;
 bool freeFlag = true;
 
-
 #include <esp32-hal-ledc.h>
+
+
 
 const int speakerPin = 25; // use any PWM-capable output pin
 int toneFrequency = 0;  // set the tone frequency in Hz
@@ -235,9 +235,9 @@ void handleCardDetected() {
 void setup()
 {
   // OTA
-  ota.setHostname("esphond");  
-  ota.setPassword("esphond");
-  ota.begin();
+  // ota.setHostname("esphond");  
+  // ota.setPassword("esphond");
+  // ota.begin();
 
   ledcSetup(0, 10000, 8); // set PWM frequency to 10kHz, resolution to 8 bits
   ledcAttachPin(speakerPin, 0); // attach PWM output to the speaker pin
@@ -299,12 +299,13 @@ void loop()
     if (irqCurr == LOW && irqPrev == HIGH) {
        //Serial.println("Got NFC IRQ");  
        handleCardDetected();
-        
     }
-  
+    
+    
     irqPrev = irqCurr;
   }
   
+  //Eerst moet monster gedetecteerd worden, dan pas kan het beginnen zoeken naar de te zoeken drugs
   if(stickerDetected == true && cardidSticker == 1138283286187137){
     stickerDetected = false;
     monsterDetected = true; //TODO, opt einde vant spel moet da weer op false gezet worden, als alle zakjes gevonden zin dus wss.
@@ -352,6 +353,7 @@ void loop()
       toneFrequency = 500;
       tellen = 0;
     }
+    
   }
   Serial.print("...");
 
