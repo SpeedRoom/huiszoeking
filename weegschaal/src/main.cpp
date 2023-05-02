@@ -24,7 +24,6 @@ Based on readMifareClassicIrq.pde by Adafruit
 #include "WiFi.h"
 #include "PubSubClient.h"
 #include "OTAlib.h"
-
 #include "HX711.h"
 
 //OTA
@@ -33,9 +32,9 @@ OTAlib ota("NETGEAR68", "excitedtuba713");
 static void startListeningToNFC();
 static void handleCardDetected();
 
-bool card1 = false;
-bool card2 = false;
-bool card3 = false;
+bool card1_detected = false;
+bool card2_detected = false;
+bool card3_detected = false;
 bool detected1 = false;
 bool detected2 = false;
 bool detected3 = false;
@@ -83,6 +82,10 @@ void setup(void) {
   //ota.setPassword("espweegschaal");
   //ota.begin();
 
+  //TODO remove unnecessary SERIAL PRINTS and add comments------------------------------------
+  //TODO add taskyield to code
+  //todo add relais code
+
   pinMode(led, OUTPUT);
   pinMode(32,OUTPUT);
   digitalWrite(led,LOW);
@@ -104,10 +107,17 @@ void setup(void) {
   
   // configure board to read RFID tags
   nfc.SAMConfig();
-
   startListeningToNFC();
-
+  //configure scale to read weight
   scale.begin(LOADCELL_DOUT_PIN, LOADCELL_SCK_PIN);
+  if (scale.wait_ready_timeout(100)) {
+    zero = scale.read();
+    Serial.println("zero gemeten");
+    delay(100);
+    }
+    //kan mogelijks korter
+  //zero = scale.read();
+  
   digitalWrite(32,HIGH);
   Serial.println("relais aan");
   delay(2000);
@@ -116,6 +126,7 @@ void setup(void) {
 }
 
 void loop(void) {  
+  // add delay to not read the card multiple times
   if (readerDisabled) {
     if (millis() - timeLastCardRead > DELAY_BETWEEN_CARDS) {
       readerDisabled = false;
@@ -123,27 +134,21 @@ void loop(void) {
     }
   } else {
     irqCurr = digitalRead(PN532_IRQ);
-
     // When the IRQ is pulled low - the reader has got something for us.
     if (irqCurr == LOW && irqPrev == HIGH) {
-       //Serial.println("Got NFC IRQ");  
        handleCardDetected(); 
     }
   
     irqPrev = irqCurr;
   }
 
-  if(card1 == true and detected1 !=true){
+  if(card1_detected == true and detected1 !=true){
     Serial.println("foudn nr1");
-    if (scale.wait_ready_timeout(100)) {
-    zero = scale.read();
-    Serial.println("zero gemeten");
-    delay(100);
-    }
     if (scale.wait_ready_timeout(100)) {
     value = scale.read();
     Serial.println(value);
     }
+    //hoogst waarschiijnlijk nog taskyield toevoegen
     Serial.println(value-zero);
     while(value-zero < 3000){
       if (scale.wait_ready_timeout(100)) {
@@ -154,11 +159,13 @@ void loop(void) {
     Serial.println("joepie zakje nr 1 licht in de bak");
     digitalWrite(32,HIGH);
     detected1 = true;
-    card1 = false;
+    card1_detected = false;
   }
 
-  if(card2 == true and detected2 !=true){
+  if(card2_detected == true and detected2 !=true){
     Serial.println("foudn nr2");
+    //reset scale to zero since a bag is placed on it
+    //code could be shorter possibly
     if (scale.wait_ready_timeout(100)) {
     zero = scale.read();
     Serial.println("zero gemeten");
@@ -178,10 +185,12 @@ void loop(void) {
     Serial.println("joepie zakje nr 2 licht in de bak");
     digitalWrite(relais,HIGH);
     detected2 = true;
-    card2 = false;
+    card2_detected = false;
   }
   
-  if(card3 == true and detected3 !=true){
+  if(card3_detected == true and detected3 !=true){
+    //reset scale to zero since a bag is placed on it
+    //code could be shorter possibly
     if (scale.wait_ready_timeout(100)) {
     zero = scale.read();
     Serial.println("zero gemeten");
@@ -201,7 +210,7 @@ void loop(void) {
     Serial.println("joepie zakje nr 3 licht in de bak");
     digitalWrite(relais,HIGH);
     detected3 = true;
-    card3 = false;
+    card3_detected = false;
   }
 
 
@@ -230,10 +239,7 @@ void handleCardDetected() {
       //Serial.println("Found an ISO14443A card");
       //Serial.print("  UID Length: ");Serial.print(uidLength, DEC);Serial.println(" bytes");
       //Serial.print("  UID Value: ");
-      Serial.print("Card ID HEX Value: ");//hierachter doorsturen
-
-
-
+      //Serial.print("Card ID HEX Value: ");//hierachter doorsturen
       nfc.PrintHex(uid, uidLength);
       
 
@@ -253,20 +259,22 @@ void handleCardDetected() {
         cardid |= uid[6];
         Serial.print("Card ID NUMERIC Value: ");
         Serial.println(cardid);
+        //set correct cardid to true
         if(cardid == 1157230119177600){
-          card1 = true;
+          card1_detected = true;
         }
         if(cardid == 1139637933133184){
-          card2 = true;
+          card2_detected = true;
         }
         if(cardid == 1141832661421440){
-          card3 = true;
+          card3_detected = true;
         }
       }
       
 
 
-
+      //mag weg want normaal gezien enkel 7 bytes
+      //------------------------------------------------------------------------------------------------------------
       if (uidLength == 4)
       {
         // We probably have a Mifare Classic card ... 
@@ -286,39 +294,14 @@ void handleCardDetected() {
       }
       Serial.println("");
 
-      
-
+      // Wait a bit before scanning again
       timeLastCardRead = millis();
     }
 
     // The reader will be enabled again after DELAY_BETWEEN_CARDS ms will pass.
+
+
+    //kan mogeljks in de loop hierboven geplaatst worden
+    //------------------------------------------------------------------------------------------------------------
     readerDisabled = true;
 }
-/*
-#include "HX711.h"
-
-// HX711 circuit wiring
-const int LOADCELL_DOUT_PIN = 16;
-const int LOADCELL_SCK_PIN = 4;
-
-HX711 scale;
-
-void setup() {
-  Serial.begin(115200);
-  scale.begin(LOADCELL_DOUT_PIN, LOADCELL_SCK_PIN);
-}
-
-void loop() {
-
-  if (scale.wait_ready_timeout(100)) {
-    long reading = scale.read();
-    Serial.print("HX711 reading: ");
-    Serial.println(reading);
-  } else {
-    Serial.println("HX711 not found.");
-  }
-
-  delay(150);
-  
-}
-*/
