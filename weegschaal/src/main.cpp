@@ -86,9 +86,8 @@ void setup(void) {
   //TODO add taskyield to code
   //todo add relais code
 
-  pinMode(led, OUTPUT);
-  pinMode(32,OUTPUT);
-  digitalWrite(led,LOW);
+  //pinMode(32,OUTPUT);
+  
   Serial.begin(115200); //Adapt the platformio.ini with correct monitor_speed
 
   Serial.println("Begin NFC532 Scanning Software.");
