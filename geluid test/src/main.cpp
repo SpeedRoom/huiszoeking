@@ -1,7 +1,7 @@
 // https://github.com/earlephilhower/ESP8266Audio
 
 #include <Arduino.h>
-#include "AudioFileSourcePROGMEM.h"
+#include "AudioFileSourcePROGMEM.h" 
 #include "AudioGeneratorMOD.h"
 #include "AudioOutputI2S.h"
 #include "OTAlib.h"
@@ -21,7 +21,6 @@
 
 // enigma.mod sample from the mod archive: https://modarchive.org/index.php?request=view_by_moduleid&query=42146
 #include "enigma.h"
-#include "enigmacoin.h"
 
 AudioGeneratorMOD *mod;
 AudioFileSourcePROGMEM *file;
@@ -40,7 +39,7 @@ void setup()
 
   audioLogger = &Serial;
   file = new AudioFileSourcePROGMEM(enigma_mod, sizeof(enigma_mod) );
-  file2 = new AudioFileSourcePROGMEM(enigma_mod_coin, sizeof(enigma_mod_coin) );
+  file2 = new AudioFileSourcePROGMEM(enigmacoin_mod, sizeof(enigmacoin_mod) );
   out = new AudioOutputI2S(0, 1); //Uncomment this line, comment the next one to use the internal DAC channel 1 (pin25) on ESP32
   // out = new AudioOutputI2S();
   out->SetGain(4); //max gain is 4
@@ -61,7 +60,7 @@ void loop()
     delay(1000);
     file->close();
     delete file;
-    file2 = new AudioFileSourcePROGMEM(enigma_mod_coin, sizeof(enigma_mod_coin));
+    file2 = new AudioFileSourcePROGMEM(enigmacoin_mod, sizeof(enigmacoin_mod));
     mod->begin(file2, out);
     //kheb lik geen andere manier gevonden dan telkens nieuwe file aan te maken. je kan pointer lik wel op 0 zetten door seek functie, 
     //mo da werkt lik nie om 1 of andere reden dak nu nog nie heb gevonden. opzich is da zo erg nie, we gaan er wel op moeten letten 

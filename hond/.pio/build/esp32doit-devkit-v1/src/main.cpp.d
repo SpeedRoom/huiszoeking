@@ -225,4 +225,13 @@
  C:/Users/elias/.platformio/packages/framework-arduinoespressif32/cores/esp32/Udp.h \
  C:/Users/elias/.platformio/packages/framework-arduinoespressif32/cores/esp32/cbuf.h \
  .pio/libdeps/esp32doit-devkit-v1/PubSubClient/src/PubSubClient.h \
+ .pio/libdeps/esp32doit-devkit-v1/ESP8266Audio/src/AudioFileSourcePROGMEM.h \
+ .pio/libdeps/esp32doit-devkit-v1/ESP8266Audio/src/AudioFileSource.h \
+ .pio/libdeps/esp32doit-devkit-v1/ESP8266Audio/src/AudioStatus.h \
+ .pio/libdeps/esp32doit-devkit-v1/ESP8266Audio/src/AudioLogger.h \
+ .pio/libdeps/esp32doit-devkit-v1/ESP8266Audio/src/AudioGeneratorMOD.h \
+ .pio/libdeps/esp32doit-devkit-v1/ESP8266Audio/src/AudioGenerator.h \
+ .pio/libdeps/esp32doit-devkit-v1/ESP8266Audio/src/AudioOutput.h \
+ .pio/libdeps/esp32doit-devkit-v1/ESP8266Audio/src/AudioOutputI2S.h \
+ src/enigma.h \
  C:/Users/elias/.platformio/packages/framework-arduinoespressif32/cores/esp32/esp32-hal-ledc.h
