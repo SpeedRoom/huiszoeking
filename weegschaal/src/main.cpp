@@ -260,7 +260,7 @@ void handleCardDetected() {
         Serial.print("Card ID NUMERIC Value: ");
         Serial.println(cardid);
         //set correct cardid to true
-        if(cardid == 1157230119177600){
+        if(cardid == 1210041037049217){
           card1_detected = true;
         }
         if(cardid == 1139637933133184){
