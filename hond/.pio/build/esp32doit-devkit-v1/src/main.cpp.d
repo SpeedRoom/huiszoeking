@@ -225,13 +225,12 @@
  C:/Users/elias/.platformio/packages/framework-arduinoespressif32/cores/esp32/Udp.h \
  C:/Users/elias/.platformio/packages/framework-arduinoespressif32/cores/esp32/cbuf.h \
  .pio/libdeps/esp32doit-devkit-v1/PubSubClient/src/PubSubClient.h \
- .pio/libdeps/esp32doit-devkit-v1/ESP8266Audio/src/AudioFileSourcePROGMEM.h \
- .pio/libdeps/esp32doit-devkit-v1/ESP8266Audio/src/AudioFileSource.h \
- .pio/libdeps/esp32doit-devkit-v1/ESP8266Audio/src/AudioStatus.h \
- .pio/libdeps/esp32doit-devkit-v1/ESP8266Audio/src/AudioLogger.h \
- .pio/libdeps/esp32doit-devkit-v1/ESP8266Audio/src/AudioGeneratorMOD.h \
- .pio/libdeps/esp32doit-devkit-v1/ESP8266Audio/src/AudioGenerator.h \
- .pio/libdeps/esp32doit-devkit-v1/ESP8266Audio/src/AudioOutput.h \
- .pio/libdeps/esp32doit-devkit-v1/ESP8266Audio/src/AudioOutputI2S.h \
- src/enigma.h \
+ lib/ESP8266Audio-master/src/AudioFileSourcePROGMEM.h \
+ lib/ESP8266Audio-master/src/AudioFileSource.h \
+ lib/ESP8266Audio-master/src/AudioStatus.h \
+ lib/ESP8266Audio-master/src/AudioLogger.h \
+ lib/ESP8266Audio-master/src/AudioGeneratorMOD.h \
+ lib/ESP8266Audio-master/src/AudioGenerator.h \
+ lib/ESP8266Audio-master/src/AudioOutput.h \
+ lib/ESP8266Audio-master/src/AudioOutputI2S.h src/enigma.h \
  C:/Users/elias/.platformio/packages/framework-arduinoespressif32/cores/esp32/esp32-hal-ledc.h

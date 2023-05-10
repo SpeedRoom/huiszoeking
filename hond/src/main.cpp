@@ -9,45 +9,27 @@
 #include "esp_sleep.h"
 #include <BLEAdvertisedDevice.h>
 #include <BLEScan.h>
+#include <Arduino.h>
 #include <Wire.h>
 #include <SPI.h>
 #include <Adafruit_PN532.h>
 #include "WiFi.h"
 #include "PubSubClient.h"
+#include <WiFi.h>
 // #include "OTAlib.h"
-
-// https://github.com/earlephilhower/ESP8266Audio
-
-// _______geluid_______
 
 #include "AudioFileSourcePROGMEM.h" 
 #include "AudioGeneratorMOD.h"
 #include "AudioOutputI2S.h"
-// #include "OTAlib.h"
 
-//OTA
-// OTAlib ota("192.168.1.35", "excitedtuba713"); //TODO werkt nog nie, over the air
-
-#if defined(ARDUINO_ARCH_RP2040)
-    #define WIFI_OFF
-    class __x { public: __x() {}; void mode() {}; };
-    __x WiFi;
-#elif defined(ESP32)
-    #include <WiFi.h>
-#else
-    #include <ESP8266WiFi.h>
-#endif
-
-// enigma.mod sample from the mod archive: https://modarchive.org/index.php?request=view_by_moduleid&query=42146
 #include "enigma.h"
+
+TaskHandle_t Task1;
 
 AudioGeneratorMOD *mod;
 AudioFileSourcePROGMEM *file;
 AudioFileSourcePROGMEM *file2;
 AudioOutputI2S *out;
-
-// _______geluid_______
-
 
 //OTA
 // OTAlib ota("NETGEAR68", "excitedtuba713");
@@ -59,14 +41,16 @@ static void handleCardDetected();
 #define PN532_IRQ   4
 #define PN532_RESET 5 
 
-int countDevices = 0;
-int sum_rssi = 0;
-int rssi;
+int gain = 0; // max 4
+int rssi1;
+int rssi2;
+int rssi3;
 const int DELAY_BETWEEN_CARDS = 500;
 long timeLastCardRead = 0;
 boolean readerDisabled = false;
 int irqCurr;
 int irqPrev;
+bool keuzeFile = 1;
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -74,12 +58,21 @@ PubSubClient client(espClient);
 uint64_t cardidSticker;
 bool stickerDetected = false;
 bool monsterDetected = false;
-const char * addrSender;
+const char * addrSenders;
+const char * addrSender1;
+const char * addrSender2;
+const char * addrSender3;
 bool freeFlag = true;
+bool freeFlag1 = true;
+bool freeFlag2 = true;
+bool freeFlag3 = true;
+
+
+const char * sender1 = "7c:9e:bd:ed:58:1a";//TODO: als deze gevonden is, adres veranderen naar volgend drugszakje 7c:9e:bd:ed:58:1a 
+const char * sender2 = "7c:9e:bd:ed:58:1a";
+const char * sender3 = "7c:9e:bd:ed:58:1a";
 
 #include <esp32-hal-ledc.h>
-
-
 
 const int speakerPin = 25; // use any PWM-capable output pin
 int toneFrequency = 0;  // set the tone frequency in Hz
@@ -97,96 +90,34 @@ int tellen;
 // This example uses the IRQ line, which is available when in I2C mode.
 Adafruit_PN532 nfc(PN532_IRQ, PN532_RESET);
 
-class IBeaconAdvertised : public BLEAdvertisedDeviceCallbacks
-{
-public:
-  // Callback when BLE is detected
-  void onResult(BLEAdvertisedDevice device)
-  {
-    if (!isIBeacon(device))
-    {
-      return;
+int scanTime = 5; //In seconds
+BLEScan* pBLEScan;
+
+class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
+    void onResult(BLEAdvertisedDevice advertisedDevice) {
+      addrSenders = strdup(advertisedDevice.getAddress().toString().c_str());
+      if (strcmp(addrSenders, sender1) == 0) {
+        addrSender1 = strdup(addrSenders);
+        rssi1 = advertisedDevice.getRSSI();
+        freeFlag1 = false;
+        Serial.printf("Advertised Device: %s \n", advertisedDevice.toString().c_str());
+      }
+      if(strcmp(addrSenders, sender2) == 0) {
+        addrSender2 = strdup(addrSenders);
+        rssi2 = advertisedDevice.getRSSI();
+        freeFlag2 = false;
+        Serial.printf("Advertised Device: %s \n", advertisedDevice.toString().c_str());
+      }
+      if(strcmp(addrSenders, sender3) == 0) {
+        addrSender3 = strdup(addrSenders);
+        rssi3 = advertisedDevice.getRSSI();
+        freeFlag3 = false;
+        Serial.printf("Advertised Device: %s \n", advertisedDevice.toString().c_str());
+      }
+      free((char*)addrSenders); //free memory dat
     }
-    printIBeacon(device);
-    countDevices +=1;
-  }
-
-private:
-  // iBeacon packet judgment
-  bool isIBeacon(BLEAdvertisedDevice device)
-  {
-    if (device.getManufacturerData().length() < 25)
-    {
-      return false;
-    }
-    if (getCompanyId(device) != 0x004C)
-    {
-      return false;
-    }
-    if (getIBeaconHeader(device) != 0x1502)
-    {
-      return false;
-    }
-    return true;
-  }
-
-  // CompanyId acquisition
-  unsigned short getCompanyId(BLEAdvertisedDevice device)
-  {
-    const unsigned short *pCompanyId = (const unsigned short *)&device
-                                           .getManufacturerData()
-                                           .c_str()[0];
-    return *pCompanyId;
-  }
-
-  // Get iBeacon Header
-  unsigned short getIBeaconHeader(BLEAdvertisedDevice device)
-  {
-    const unsigned short *pHeader = (const unsigned short *)&device
-                                        .getManufacturerData()
-                                        .c_str()[2];
-    return *pHeader;
-  }
-
-  // Get UUID
-  String getUuid(BLEAdvertisedDevice device)
-  {
-    const char *pUuid = &device.getManufacturerData().c_str()[4];
-    char uuid[64] = {0};
-    sprintf(
-        uuid,
-        "%02X%02X%02X%02X-%02X%02X-%02X%02X-%02X%02X-%02X%02X%02X%02X%02X%02X",
-        pUuid[0], pUuid[1], pUuid[2], pUuid[3], pUuid[4], pUuid[5], pUuid[6], pUuid[7],
-        pUuid[8], pUuid[9], pUuid[10], pUuid[11], pUuid[12], pUuid[13], pUuid[14], pUuid[15]);
-    return String(uuid);
-  }
-
-  // Get TxPower
-  signed char getTxPower(BLEAdvertisedDevice device)
-  {
-    const signed char *pTxPower = (const signed char *)&device
-                                      .getManufacturerData()
-                                      .c_str()[24];
-    return *pTxPower;
-  }
-
-  // Serial output of iBeacon information
-  void printIBeacon(BLEAdvertisedDevice device)
-  {
-    if (! (getUuid(device).equals("2686F39C-BADA-4658-854A-A62E7E5E8B8") || getUuid(device).equals("2686F39C-BADA-4658-854A-A62E7E5E8B8D"))){
-      addrSender =  strdup(device.getAddress().toString().c_str());
-      freeFlag = false;
-      Serial.println("");
-      Serial.printf("addr:%s rssi:%d uuid:%s power:%d\r\n",
-                    device.getAddress().toString().c_str(), //BELANGRIJK! dit is het adres afhankelijk van verzender!
-                    device.getRSSI(),
-                    getUuid(device).c_str(),
-                    *(signed char *)&device.getManufacturerData().c_str()[24]);
-      Serial.println("");
-      sum_rssi += device.getRSSI();
-    }
-  }
 };
+
 
 void startListeningToNFC() {
   // Reset our IRQ indicators
@@ -228,33 +159,11 @@ void handleCardDetected() {
         cardidSticker <<= 8;
         cardidSticker |= uid[5];  
         cardidSticker <<= 8;
-        cardidSticker |= uid[6]; 
+        cardidSticker |= uid[6];   
         Serial.print("cardidsticker ");
         Serial.print(cardidSticker);
         stickerDetected = true;
-      }
-
-      
-      if (uidLength == 4)
-      {
-        // We probably have a Mifare Classic card ... 
-        uint32_t cardid = uid[0];
-        cardid <<= 8;
-        cardid |= uid[1];
-        cardid <<= 8;
-        cardid |= uid[2];  
-        cardid <<= 8;
-        cardid |= uid[3]; 
-        //Serial.print("Seems to be a Mifare Classic card #");
-        Serial.print("Card ID NUMERIC Value: ");
-        Serial.println(cardid);
-        const char * mes = (const char *) String(cardid).c_str();
-        Serial.println(mes);
-        client.publish("nieuwpoort/tags", mes);
-      }
-      Serial.println("");
-      success = false;
-      
+      }     
 
       timeLastCardRead = millis();
     }
@@ -263,24 +172,73 @@ void handleCardDetected() {
     readerDisabled = true;
 }
 
+void Task1code( void * parameter) {
+  
+  for(;;) {
+      // put your main code here, to run repeatedly:
+    BLEScanResults foundDevices = pBLEScan->start(scanTime, false);
+    Serial.print("Devices found: ");
+    Serial.println(foundDevices.getCount());
+    Serial.println("Scan done!");
+    pBLEScan->clearResults();   // delete results fromBLEScan buffer to release memory
+    delay(2000);
+  }
+}
+
 void setup()
 {
+  //geluid:
+
+  BLEDevice::init("");
+  pBLEScan = BLEDevice::getScan(); //create new scan
+  pBLEScan->setAdvertisedDeviceCallbacks(new MyAdvertisedDeviceCallbacks());
+  pBLEScan->setActiveScan(true); //active scan uses more power, but get results faster
+  pBLEScan->setInterval(100);
+  pBLEScan->setWindow(99);  // less or equal setInterval value
+  audioLogger = &Serial;
+
+  file = new AudioFileSourcePROGMEM(enigma_mod, sizeof(enigma_mod) );
+  file2 = new AudioFileSourcePROGMEM(enigmacoin_mod, sizeof(enigmacoin_mod) );
+  out = new AudioOutputI2S(0, 1); //Uncomment this line, comment the next one to use the internal DAC channel 1 (pin25) on ESP32
+  // out = new AudioOutputI2S();
+  out->SetGain(0); //max gain is 4
+  mod = new AudioGeneratorMOD();
+  mod->SetBufferSize(1024);
+  mod->SetSampleRate(44100);
+  mod->SetStereoSeparation(32);
+  mod->begin(file, out);
+  //einde geluid
+
+  xTaskCreatePinnedToCore(
+      Task1code, /* Function to implement the task */
+      "Task1", /* Name of the task */
+      10000,  /* Stack size in words */
+      NULL,  /* Task input parameter */
+      0,  /* Priority of the task */
+      &Task1,  /* Task handle. */
+      0); /* Core where the task should run */
+
   // OTA
   // ota.setHostname("esphond");  
   // ota.setPassword("esphond");
   // ota.begin();
 
-
+  ledcSetup(0, 10000, 8); // set PWM frequency to 10kHz, resolution to 8 bits
+  ledcAttachPin(speakerPin, 0); // attach PWM output to the speaker pin
 
   Serial.begin(115200); //Adapt the platformio.ini with correct monitor_speed
 
-  BLEDevice::init("");
+  
+
+  // BLEDevice::init("");
 
   
   //NFC-->
   Serial.println("Begin NFC532 Scanning Software.");
 
   nfc.begin();
+
+
 
   uint32_t versiondata = nfc.getFirmwareVersion();
   if (! versiondata) {
@@ -297,64 +255,42 @@ void setup()
 
   startListeningToNFC();
   //<--NFC
-
-    // _______geluid_______
-
-  WiFi.mode(WIFI_OFF); //WiFi.forceSleepBegin();
-  delay(1000);
-
-  audioLogger = &Serial;
-  file = new AudioFileSourcePROGMEM(enigma_mod, sizeof(enigma_mod) );
-  file2 = new AudioFileSourcePROGMEM(enigmacoin_mod, sizeof(enigmacoin_mod) );
-  out = new AudioOutputI2S(0, 1); //Uncomment this line, comment the next one to use the internal DAC channel 1 (pin25) on ESP32
-  // out = new AudioOutputI2S();
-  out->SetGain(4); //max gain is 4
-  mod = new AudioGeneratorMOD();
-  mod->SetBufferSize(3*1024);
-  mod->SetSampleRate(44100);
-  mod->SetStereoSeparation(32);
-  mod->begin(file, out);
-
-  ledcSetup(0, 10000, 8); // set PWM frequency to 10kHz, resolution to 8 bits
-  ledcAttachPin(speakerPin, 0); // attach PWM output to the speaker pin
-
-  // _______geluid_______
 }
 
 void loop()
 { 
-    if (mod->isRunning()) {
+  if (mod->isRunning()) {
     if (!mod->loop()) {
-      mod->stop(); //mod->stop() moet niet echt denk ik
-      Serial.printf("testtttt\n");
-    }
-      
+        mod->stop();
+      }
   } else {
-    Serial.printf("MOD done\n");
-    delay(1000);
+    Serial.print("MOD done");
     file->close();
     delete file;
-    file2 = new AudioFileSourcePROGMEM(enigmacoin_mod, sizeof(enigmacoin_mod));
-    mod->begin(file2, out);
+    out = new AudioOutputI2S(0, 1);
+    out->SetGain(gain);
+    if(keuzeFile == 0){
+      file = new AudioFileSourcePROGMEM(enigma_mod, sizeof(enigma_mod));
+    } else {
+      file = new AudioFileSourcePROGMEM(enigmacoin_mod, sizeof(enigmacoin_mod));
+    }
+    
+
+    mod->begin(file, out);
     //kheb lik geen andere manier gevonden dan telkens nieuwe file aan te maken. je kan pointer lik wel op 0 zetten door seek functie, 
     //mo da werkt lik nie om 1 of andere reden dak nu nog nie heb gevonden. opzich is da zo erg nie, we gaan er wel op moeten letten 
     //dat file eerst ingeladen/gemaakt is met new en dan gain te bepalen(max 4) met afstand. zodat geluid nie achter komt
   }
 
-  if((toneFrequency != 0) and (tellen < 1)){
-    ledcWriteTone(0, toneFrequency);
-    tellen = tellen +1;
-  }
-  else{
-    ledcWrite(0,0);
-  }
+  // if((toneFrequency != 0) and (tellen < 1)){
+  //   Serial.print("heyy");
+  //   ledcWriteTone(0, toneFrequency);
+  //   tellen = tellen +1;
+  // }
+  // else{
+  //   ledcWrite(0,0);
+  // } TODO alles met die tonefrequency, geen idee wat da is, maar da is precies ni nodig.
 
-  //ontvangen signaal
-  
-  BLEScan *scan = BLEDevice::getScan();
-  scan->setAdvertisedDeviceCallbacks(new IBeaconAdvertised(), true);
-  scan->setActiveScan(true);
-  scan->start(1, false);
 
   if (readerDisabled) {
     if (millis() - timeLastCardRead > DELAY_BETWEEN_CARDS) {
@@ -373,7 +309,9 @@ void loop()
     
     irqPrev = irqCurr;
   }
-  
+
+
+
   //Eerst moet monster gedetecteerd worden, dan pas kan het beginnen zoeken naar de te zoeken drugs
   if(stickerDetected == true && cardidSticker == 1138283286187137){
     stickerDetected = false;
@@ -405,31 +343,49 @@ void loop()
     toneFrequency = 3000;
     tellen = 0;
   }
-  const char * x = "7c:9e:bd:2a:fc:1e";//TODO: als deze gevonden is, adres veranderen naar volgend drugszakje
-  if(freeFlag == false && countDevices >= 5){ //countdevices moet aan 5 zijn om gemiddelde daaruit te berekenen
-    rssi = (int) sum_rssi / countDevices;
-    rssi = rssi + 30;
-    rssi = (int) rssi / 4;
-    countDevices = 0;
-    sum_rssi = 0;
-    Serial.printf(addrSender);
-    Serial.println("");
-    Serial.println(rssi);
-    // if(monsterDetected == true && (strcmp(addrSender,x) == 0 || strcmp(addrSender,x) == 0 || strcmp(addrSender,x) == 0)){
-    if(monsterDetected == true && strcmp(x,addrSender) == 0 && rssi > -65){
+
+  if(freeFlag1 == false){
+    rssi1 = rssi1 + 30;
+    rssi1 = (int) rssi1 / 4;
+    Serial.print("sterkte signaal: ");
+    Serial.println(rssi1);
+
+    if (rssi1 == 0 || rssi1 == -1 || rssi1 == -2 || rssi1 == -3 || rssi1 == -4 || rssi1 == -5 || rssi1 == -6 || rssi1 == -7){
+      gain = 3.5;//TODO: gain van 4 lukt lik niet, en kweet lik niet of een gain van 3.5 beter is dan 1. keer testen met de pcb en geluid file mss?
+      //TODO: de gain moet ook weer op 0 gezet worden als er geen beacon gedetecteerd wordt.
+    } else if (rssi1 == -8 || rssi1 == -9 || rssi1 == -10) {
+      gain = 1;
+    } else if (rssi1 < -10) {
+      gain = 0;
+    }
+
+
+
+    if(monsterDetected == true && strcmp(sender1,addrSender1) == 0){
       //TODO: hier moet ie blaffen
       Serial.println("stil BLAFFEN");
+      Serial.println(gain);
       toneFrequency = 500;
-      tellen = 0;
+      keuzeFile = 0; //0 = geblaf
     }
-    
-  }
-  Serial.print("...");
+  } else {
 
-  if(freeFlag == false){
-    free((char*)addrSender);
-    freeFlag = true;
   }
 
 
+  if(freeFlag1 == false){
+    free((char*)addrSender1);
+    freeFlag1 = true;
+  }
+  if(freeFlag2 == false){
+    free((char*)addrSender2);
+    freeFlag2 = true;
+  }
+  if(freeFlag3 == false){
+    free((char*)addrSender3);
+    freeFlag3 = true;
+  }
+
+  //q: where in my code did i make a mistake with the heap / freeing? //a: in the send function, you need to free the memory of the char* addrSender
+  //q: what do you mean with send function? //a: the send function in the espnow library
 }

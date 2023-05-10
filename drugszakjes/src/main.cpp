@@ -9,7 +9,6 @@
 #include <BLEScan.h>
 
 #define BEACON false
-
 #ifndef BEACON
 
 class IBeaconAdvertised : public BLEAdvertisedDeviceCallbacks

@@ -1,10 +1,10 @@
 // https://github.com/earlephilhower/ESP8266Audio
 
 #include <Arduino.h>
-#include "AudioFileSourcePROGMEM.h" 
+#include "AudioFileSourcePROGMEM.h"
 #include "AudioGeneratorMOD.h"
 #include "AudioOutputI2S.h"
-#include "OTAlib.h"
+// #include "OTAlib.h"
 
 //OTA
 // OTAlib ota("192.168.1.35", "excitedtuba713"); //TODO werkt nog nie, over the air
@@ -38,8 +38,8 @@ void setup()
   delay(1000);
 
   audioLogger = &Serial;
-  file = new AudioFileSourcePROGMEM(enigma_mod, sizeof(enigma_mod) );
-  file2 = new AudioFileSourcePROGMEM(enigmacoin_mod, sizeof(enigmacoin_mod) );
+  file = new AudioFileSourcePROGMEM(enigma_mod, sizeof(enigma_mod));
+  file2 = new AudioFileSourcePROGMEM(enigmacoin_mod, sizeof(enigmacoin_mod));
   out = new AudioOutputI2S(0, 1); //Uncomment this line, comment the next one to use the internal DAC channel 1 (pin25) on ESP32
   // out = new AudioOutputI2S();
   out->SetGain(4); //max gain is 4
@@ -66,5 +66,4 @@ void loop()
     //mo da werkt lik nie om 1 of andere reden dak nu nog nie heb gevonden. opzich is da zo erg nie, we gaan er wel op moeten letten 
     //dat file eerst ingeladen/gemaakt is met new en dan gain te bepalen(max 4) met afstand. zodat geluid nie achter komt
   }
-  Serial.printf("test");
 }
