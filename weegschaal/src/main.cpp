@@ -86,9 +86,8 @@ void setup(void) {
   //TODO add taskyield to code
   //todo add relais code
 
-  pinMode(led, OUTPUT);
-  pinMode(32,OUTPUT);
-  digitalWrite(led,LOW);
+  //pinMode(32,OUTPUT);
+  
   Serial.begin(115200); //Adapt the platformio.ini with correct monitor_speed
 
   Serial.println("Begin NFC532 Scanning Software.");
@@ -260,7 +259,7 @@ void handleCardDetected() {
         Serial.print("Card ID NUMERIC Value: ");
         Serial.println(cardid);
         //set correct cardid to true
-        if(cardid == 1157230119177600){
+        if(cardid == 1210041037049217){
           card1_detected = true;
         }
         if(cardid == 1139637933133184){
