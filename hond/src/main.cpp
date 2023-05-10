@@ -41,7 +41,7 @@ static void handleCardDetected();
 #define PN532_IRQ   4
 #define PN532_RESET 5 
 
-int gain = 0; // max 4
+int gain = 1; // max 4
 int rssi1;
 int rssi2;
 int rssi3;
