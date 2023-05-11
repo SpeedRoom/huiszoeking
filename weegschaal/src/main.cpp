@@ -38,7 +38,7 @@ long zero;
 long value;
 const int DELAY_BETWEEN_CARDS = 500;
 long timeLastCardRead = 0;
-boolean readerDisabled = false;
+bool readerDisabled = false;
 int irqCurr;
 int irqPrev;
 int scalethreshold = 300000;
@@ -78,17 +78,23 @@ void setup(void) {
   //Scale Setup
   scale.begin(LOADCELL_DOUT_PIN, LOADCELL_SCK_PIN);
   
-  pinMode(led,OUTPUT);
+  
   //Relais Setup and test
   pinMode(32,OUTPUT);;
   digitalWrite(32,HIGH);
+
+  pinMode(led,OUTPUT);
+
 }
 
-void blinkled(){
-  digitalWrite(led,HIGH);
-  vTaskDelay(200 / portTICK_PERIOD_MS);
-  digitalWrite(led,LOW);
-  vTaskDelay(200 / portTICK_PERIOD_MS);
+void blinkled(int amount){
+  //used for visual feedback when board is used instead of serial monitor
+  for(int i = 0; i < amount; i++){
+    digitalWrite(led,HIGH);
+    vTaskDelay(100 / portTICK_PERIOD_MS);
+    digitalWrite(led,LOW);
+    vTaskDelay(100 / portTICK_PERIOD_MS);
+  }
 }
 
 void loop(void) {  
@@ -120,7 +126,7 @@ void loop(void) {
       taskYIELD();
     }
     detected1 = true;
-    blinkled();
+    blinkled(1);
     
   }
 
@@ -137,7 +143,7 @@ void loop(void) {
       taskYIELD();
     }
     detected2 = true;
-    blinkled();
+    blinkled(1);
   }
   
   if(card3_detected == true and detected3 !=true){
@@ -154,7 +160,7 @@ void loop(void) {
       taskYIELD();
     }
     detected3 = true;
-    blinkled();
+    blinkled(1);
   }
   if (detected1 && detected2 && detected3){
     digitalWrite(relais,LOW);
@@ -206,12 +212,15 @@ void handleCardDetected() {
         //set correct cardid to true
         if(cardid == 1210041037049217){
           card1_detected = true;
+          blinkled(1);
         }
         if(cardid == 1201244944027009){
           card2_detected = true;
+          blinkled(2);
         }
         if(cardid == 1192448851004801){
           card3_detected = true;
+          blinkled(3);
         }
       }
       // Wait a bit before scanning again
