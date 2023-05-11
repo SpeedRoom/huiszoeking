@@ -9,15 +9,11 @@
 #include "PubSubClient.h"
 #include "OTAlib.h"
 #include "HX711.h"
-
-
-//last ting i was doing
-//testing if the code can be shorter see bag nr2
-//test if the code fully works?
-
-//change value's to your own wifi network
+//change value's to your own wifi network and OTA settings
 #define SSID "NETGEAR68"
 #define PASSWORD "excitedtuba713"
+#define OTAHOSTNAME "espweegschaal"
+#define OTAPASSWORD "espweegschaal"
 
 // Pins used for I2C IRQ
 #define PN532_IRQ   4
@@ -28,18 +24,14 @@
 const int LOADCELL_DOUT_PIN = 17;
 const int LOADCELL_SCK_PIN = 18;
 
-bool card1_detected = false;
-bool card2_detected = false;
-bool card3_detected = false;
-bool detected1 = false;
-bool detected2 = false;
-bool detected3 = false;
-long zero;
-long value;
+bool card_detected[3] = {false,false,false};
+bool detected[3] = {false,false,false};
+bool readerDisabled = false;
 const int DELAY_BETWEEN_CARDS = 500;
 long timeLastCardRead = 0;
-bool readerDisabled = false;
 int irqCurr;
+long zero;
+long value;
 int irqPrev;
 int scalethreshold = 300000;
 
@@ -47,74 +39,24 @@ static void startListeningToNFC();
 static void handleCardDetected();
 
 OTAlib ota(SSID,PASSWORD);
-
 WiFiClient espClient;
 PubSubClient client(espClient);
-
 HX711 scale;
-
-
-// This example uses the IRQ line, which is available when in I2C mode.
 Adafruit_PN532 nfc(PN532_IRQ, PN532_RESET);
-
-void setup(void) {
-  // OTA Setup
-  ota.setHostname("espweegschaal");  
-  ota.setPassword("espweegschaal");
-  ota.begin();
-  //Serial Setup
-  Serial.begin(115200);
-
-  // RFID Setup
-  nfc.begin();
-  uint32_t versiondata = nfc.getFirmwareVersion();
-  if (! versiondata) {
-    // Didn't find PN53x board
-    while (1); // halt
-  }
-  nfc.SAMConfig();
-  startListeningToNFC();
-
-  //Scale Setup
-  scale.begin(LOADCELL_DOUT_PIN, LOADCELL_SCK_PIN);
-  
-  
-  //Relais Setup and test
-  pinMode(32,OUTPUT);;
-  digitalWrite(32,HIGH);
-
-  pinMode(led,OUTPUT);
-
-}
 
 void blinkled(int amount){
   //used for visual feedback when board is used instead of serial monitor
   for(int i = 0; i < amount; i++){
     digitalWrite(led,HIGH);
-    vTaskDelay(100 / portTICK_PERIOD_MS);
+    vTaskDelay(50 / portTICK_PERIOD_MS);
     digitalWrite(led,LOW);
-    vTaskDelay(100 / portTICK_PERIOD_MS);
+    vTaskDelay(50 / portTICK_PERIOD_MS);
   }
 }
 
-void loop(void) {  
-  // delay for NFC reading
-  if (readerDisabled) {
-    if (millis() - timeLastCardRead > DELAY_BETWEEN_CARDS) {
-      readerDisabled = false;
-      startListeningToNFC();
-    }
-  } else {
-    irqCurr = digitalRead(PN532_IRQ);
-    // When the IRQ is pulled low - the reader has got something for us.
-    if (irqCurr == LOW && irqPrev == HIGH) {
-       handleCardDetected(); 
-    }
-  
-    irqPrev = irqCurr;
-  }
-  if(card1_detected == true and detected1 !=true){
-    //reset scale to zero since a bag is placed on it
+void read_scale(int cardnr){
+  if(card_detected[cardnr] == true and detected[cardnr] !=true){
+    //reset scale to zero since a bag may be placed on it
     zero = scale.read();
     delay(100);
     value = 0;
@@ -125,56 +67,9 @@ void loop(void) {
       Serial.println(value-zero);
       taskYIELD();
     }
-    detected1 = true;
-    blinkled(1);
-    
+    detected[cardnr] = true;
+    blinkled(cardnr+1);
   }
-
-  if(card2_detected == true and detected2 !=true){
-    //reset scale to zero since a bag is placed on it
-    zero = scale.read();
-    delay(100);
-    value = 0;
-    while(value-zero < scalethreshold){
-      if (scale.wait_ready_timeout(100)) {
-      value = scale.read();
-      }
-      Serial.println(value-zero);
-      taskYIELD();
-    }
-    detected2 = true;
-    blinkled(1);
-  }
-  
-  if(card3_detected == true and detected3 !=true){
-    //reset scale to zero since a bag is placed on it
-    zero = scale.read();
-    delay(100);
-    value = 0;
-    Serial.println(value-zero);
-    while(value-zero < scalethreshold){
-      if (scale.wait_ready_timeout(100)) {
-      value = scale.read();
-      }
-      Serial.println(value-zero);
-      taskYIELD();
-    }
-    detected3 = true;
-    blinkled(1);
-  }
-  if (detected1 && detected2 && detected3){
-    digitalWrite(relais,LOW);
-    detected1 = false;
-    detected2 = false;
-    detected3 = false;
-    card1_detected = false;
-    card2_detected = false;
-    card3_detected = false;
-    //reset the bolean values to ensure the code doesn't start over again
-  }
-  taskYIELD();
-
-
 }
 
 void startListeningToNFC() {
@@ -211,22 +106,77 @@ void handleCardDetected() {
         Serial.println(cardid);
         //set correct cardid to true
         if(cardid == 1210041037049217){
-          card1_detected = true;
+          card_detected[0] = true;
           blinkled(1);
         }
         if(cardid == 1201244944027009){
-          card2_detected = true;
+          card_detected[1] = true;
           blinkled(2);
         }
         if(cardid == 1192448851004801){
-          card3_detected = true;
+          card_detected[2] = true;
           blinkled(3);
         }
       }
-      // Wait a bit before scanning again
       timeLastCardRead = millis();
     }
-
     // The reader will be enabled again after DELAY_BETWEEN_CARDS ms will pass.
     readerDisabled = true;
+}
+
+void setup(void) {
+  // OTA Setup
+  ota.setHostname(OTAHOSTNAME);  
+  ota.setPassword(OTAPASSWORD);
+  ota.begin();
+  //Serial Setup
+  Serial.begin(115200);
+  // RFID Setup
+  nfc.begin();
+  uint32_t versiondata = nfc.getFirmwareVersion();
+  if (! versiondata) {
+    // Didn't find PN53x board
+    while (1); // halt
+  }
+  nfc.SAMConfig();
+  startListeningToNFC();
+  //Scale Setup
+  scale.begin(LOADCELL_DOUT_PIN, LOADCELL_SCK_PIN);
+  //Relais Setup and test
+  pinMode(32,OUTPUT);;
+  digitalWrite(32,HIGH);
+
+  pinMode(led,OUTPUT);
+
+}
+
+void loop(void) {  
+  // delay for NFC reading
+  //when not all cards are detected the code will run again
+  if (!(detected[0] && detected[1] && detected[2])){
+    if (readerDisabled) {
+        if (millis() - timeLastCardRead > DELAY_BETWEEN_CARDS) {
+          readerDisabled = false;
+          startListeningToNFC();
+        }
+      } else {
+        irqCurr = digitalRead(PN532_IRQ);
+        // When the IRQ is pulled low - the reader has got something for us.
+        if (irqCurr == LOW && irqPrev == HIGH) {
+          handleCardDetected(); 
+        }
+      
+        irqPrev = irqCurr;
+      }
+      //read scale values for each card if a card is detected
+      read_scale(0);
+      read_scale(1);
+      read_scale(2);
+  }
+  else {
+    //if all cards are detected the relais will be turned on
+    digitalWrite(relais,LOW);
+    //reset the bolean values to ensure the code doesn't start over again
+  }
+  taskYIELD();
 }
