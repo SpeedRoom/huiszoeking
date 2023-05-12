@@ -39,7 +39,7 @@ static void handleCardDetected();
 
 // Pins used for I2C IRQ
 #define PN532_IRQ   4
-#define PN532_RESET 5 
+#define PN532_RESET 5
 
 int gain = 0; // max 4
 int rssi1;
@@ -67,25 +67,18 @@ bool freeFlag1 = true;
 bool freeFlag2 = true;
 bool freeFlag3 = true;
 
+bool sticker2detected = false;
+bool sticker3detected = false;
+bool sticker4detected = false;
+
 
 const char * sender1 = "7c:9e:bd:ed:58:1a";//TODO: als deze gevonden is, adres veranderen naar volgend drugszakje 7c:9e:bd:ed:58:1a 
-const char * sender2 = "7c:9e:bd:ed:58:1a";
-const char * sender3 = "7c:9e:bd:ed:58:1a";
+const char * sender2 = "7c:9e:bd:f4:10:32";
+const char * sender3 = "7c:9e:bd:2a:fc:1e";
 
 #include <esp32-hal-ledc.h>
 
 const int speakerPin = 25; // use any PWM-capable output pin
-int toneFrequency = 0;  // set the tone frequency in Hz
-int tellen;
-
-// valid_tags = 
-// 0x02 0x82 0x00 0x08 0x7B 0x2B 0xC3
-// 0x04 0x9C 0x49 0x6A 0x99 0x5B 0x80 
-// 0x69 0x42 0xA2 0xB8 
-// 0xB3 0xF7 0xC6 0x02 
-// 0x04 0x6B 0x0F 0xE2 0x50 0x5A 0x80
-// 0xA9 0xAF 0xAE 0xC2 
-// 0x04 0x07 0xCC 0x52 0xA8 0x58 0x81 
 
 // This example uses the IRQ line, which is available when in I2C mode.
 Adafruit_PN532 nfc(PN532_IRQ, PN532_RESET);
@@ -100,19 +93,19 @@ class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
         addrSender1 = strdup(addrSenders);
         rssi1 = advertisedDevice.getRSSI();
         freeFlag1 = false;
-        Serial.printf("Advertised Device: %s \n", advertisedDevice.toString().c_str());
+        // Serial.printf("Advertised Device: %s \n", advertisedDevice.toString().c_str());
       }
       if(strcmp(addrSenders, sender2) == 0) {
         addrSender2 = strdup(addrSenders);
         rssi2 = advertisedDevice.getRSSI();
         freeFlag2 = false;
-        Serial.printf("Advertised Device: %s \n", advertisedDevice.toString().c_str());
+        // Serial.printf("Advertised Device: %s \n", advertisedDevice.toString().c_str());
       }
       if(strcmp(addrSenders, sender3) == 0) {
         addrSender3 = strdup(addrSenders);
         rssi3 = advertisedDevice.getRSSI();
         freeFlag3 = false;
-        Serial.printf("Advertised Device: %s \n", advertisedDevice.toString().c_str());
+        // Serial.printf("Advertised Device: %s \n", advertisedDevice.toString().c_str());
       }
       free((char*)addrSenders); //free memory dat
     }
@@ -135,6 +128,7 @@ void handleCardDetected() {
     // read the NFC tag's info
     success = nfc.readDetectedPassiveTargetID(uid, &uidLength);
     Serial.println(success ? "Read successful" : "Read failed (not a card?)");
+    
 
     if (success) {
       // Display some basic information about the card
@@ -164,22 +158,20 @@ void handleCardDetected() {
         Serial.print(cardidSticker);
         stickerDetected = true;
       }     
-
       timeLastCardRead = millis();
     }
-
     // The reader will be enabled again after DELAY_BETWEEN_CARDS ms will pass.
     readerDisabled = true;
-}
+} 
 
 void Task1code( void * parameter) {
   
   for(;;) {
       // put your main code here, to run repeatedly:
     BLEScanResults foundDevices = pBLEScan->start(scanTime, false);
-    Serial.print("Devices found: ");
-    Serial.println(foundDevices.getCount());
-    Serial.println("Scan done!");
+    Serial.print("------Devices found: ");
+    Serial.print(foundDevices.getCount());
+    Serial.println(" Scan done!--------");
     pBLEScan->clearResults();   // delete results fromBLEScan buffer to release memory
     delay(2000);
   }
@@ -246,9 +238,10 @@ void setup()
     while (1); // halt
   }
   // Got ok data, print it out!
-  Serial.print("Found chip PN5"); Serial.println((versiondata>>24) & 0xFF, HEX); 
-  Serial.print("Firmware ver. "); Serial.print((versiondata>>16) & 0xFF, DEC); 
-  Serial.print('.'); Serial.println((versiondata>>8) & 0xFF, DEC);
+  Serial.print("-------Found chip PN5"); Serial.print((versiondata>>24) & 0xFF, HEX); 
+  Serial.print("   Firmware ver. "); Serial.print((versiondata>>16) & 0xFF, DEC); 
+  Serial.print('.'); Serial.print((versiondata>>8) & 0xFF, DEC);
+  Serial.println("--------");
   
   // configure board to read RFID tags
   nfc.SAMConfig();
@@ -264,7 +257,13 @@ void loop()
         mod->stop();
       }
   } else {
+    Serial.println("_________________geluid_________________");
     Serial.print("MOD done");
+    Serial.print(" gain en audio file: (0 is blaffen): ");
+    Serial.print(gain);
+    Serial.print(" , ");
+    Serial.println(keuzeFile);
+    Serial.println("_________________geluid_________________");
     file->close();
     delete file;
     out = new AudioOutputI2S(0, 1);
@@ -274,104 +273,124 @@ void loop()
     } else {
       file = new AudioFileSourcePROGMEM(enigmacoin_mod, sizeof(enigmacoin_mod));
     }
-    
-
+    gain = 0;
     mod->begin(file, out);
-    //kheb lik geen andere manier gevonden dan telkens nieuwe file aan te maken. je kan pointer lik wel op 0 zetten door seek functie, 
-    //mo da werkt lik nie om 1 of andere reden dak nu nog nie heb gevonden. opzich is da zo erg nie, we gaan er wel op moeten letten 
-    //dat file eerst ingeladen/gemaakt is met new en dan gain te bepalen(max 4) met afstand. zodat geluid nie achter komt
   }
-
-  // if((toneFrequency != 0) and (tellen < 1)){
-  //   Serial.print("heyy");
-  //   ledcWriteTone(0, toneFrequency);
-  //   tellen = tellen +1;
-  // }
-  // else{
-  //   ledcWrite(0,0);
-  // } TODO alles met die tonefrequency, geen idee wat da is, maar da is precies ni nodig.
 
 
   if (readerDisabled) {
+    
     if (millis() - timeLastCardRead > DELAY_BETWEEN_CARDS) {
       readerDisabled = false;
       startListeningToNFC();
     }
   } else {
     irqCurr = digitalRead(PN532_IRQ);
-
     // When the IRQ is pulled low - the reader has got something for us.
     if (irqCurr == LOW && irqPrev == HIGH) {
        //Serial.println("Got NFC IRQ");  
-       handleCardDetected();
+       handleCardDetected(); //cardidSticker wordt hier ingevuld
+       readerDisabled = true;
     }
-    
-    
     irqPrev = irqCurr;
   }
-
-
 
   //Eerst moet monster gedetecteerd worden, dan pas kan het beginnen zoeken naar de te zoeken drugs
   if(stickerDetected == true && cardidSticker == 1138283286187137){
     stickerDetected = false;
     monsterDetected = true; //TODO, opt einde vant spel moet da weer op false gezet worden, als alle zakjes gevonden zin dus wss.
     Serial.println("heeft gesnuffeld");
-    cardidSticker = 0;
   }
 
   if(stickerDetected == true && monsterDetected == true && cardidSticker == 1392551377325440){
-    //hier sticker 2 gedetecteerd // TODO: hier moet ie dus nog luider/wilder blaffen
+    //hier sticker 2 gedetecteerd
     stickerDetected = false;
     Serial.println("luid BLAFFEN");
-    toneFrequency = 3000;
-    tellen = 0;
+    sticker2detected = true;
   }
 
   if(stickerDetected == true && monsterDetected == true && cardidSticker == 1384850500963712){
-    //hier sticker 3 gedetecteerd // TODO: hier moet ie dus nog luider blaffen
+    //hier sticker 3 gedetecteerd
     stickerDetected = false;
     Serial.println("luid BLAFFEN");
-    toneFrequency = 3000;
-    tellen = 0;
+    sticker3detected = true;
   }
 
   if(stickerDetected == true && monsterDetected == true && cardidSticker == 1377149624601984){
-    //hier sticker 4 gedetecteerd // TODO: hier moet ie dus nog luider blaffen
+    //hier sticker 4 gedetecteerd
     stickerDetected = false;
     Serial.println("luid BLAFFEN");
-    toneFrequency = 3000;
-    tellen = 0;
+    sticker4detected = true;
   }
 
   if(freeFlag1 == false){
     rssi1 = rssi1 + 30;
     rssi1 = (int) rssi1 / 4;
-    Serial.print("sterkte signaal: ");
+    Serial.print("sterkte signaal 1: ");
     Serial.println(rssi1);
 
-    if (rssi1 == 0 || rssi1 == -1 || rssi1 == -2 || rssi1 == -3 || rssi1 == -4 || rssi1 == -5 || rssi1 == -6 || rssi1 == -7){
-      gain = 3.5;//TODO: gain van 4 lukt lik niet, en kweet lik niet of een gain van 3.5 beter is dan 1. keer testen met de pcb en geluid file mss?
-      //TODO: de gain moet ook weer op 0 gezet worden als er geen beacon gedetecteerd wordt.
-    } else if (rssi1 == -8 || rssi1 == -9 || rssi1 == -10) {
-      gain = 1;
-    } else if (rssi1 < -10) {
-      gain = 0;
-    }
-
-
-
     if(monsterDetected == true && strcmp(sender1,addrSender1) == 0){
-      //TODO: hier moet ie blaffen
       Serial.println("stil BLAFFEN");
-      Serial.println(gain);
-      toneFrequency = 500;
-      keuzeFile = 0; //0 = geblaf
+      if(cardidSticker != 0){
+        keuzeFile = 1;
+        gain = 3.5; 
+        cardidSticker = 0;
+      } else if (0 > rssi1 && rssi1 >= -7){
+        keuzeFile = 0; //0 = geblaf
+        gain = 3.5;//TODO: gain van 4 lukt lik niet, en kweet lik niet of een gain van 3.5 beter is dan 1. keer testen met de pcb en geluid file mss?
+      //TODO: de gain moet ook weer op 0 gezet worden als er geen beacon gedetecteerd wordt.
+        Serial.print("111111111111111111111111");
+      }
     }
-  } else {
-
   }
 
+  if(freeFlag2 == false){
+    rssi2 = rssi2 + 30;
+    rssi2 = (int) rssi2 / 4;
+    Serial.print("sterkte signaal 2: ");
+    Serial.println(rssi2);
+
+    if(sticker2detected == true && monsterDetected == true && strcmp(sender2,addrSender2) == 0){
+      Serial.println("stil BLAFFEN");
+      if(cardidSticker != 0){
+        keuzeFile = 1;
+        gain = 3.5; 
+        cardidSticker = 0;
+      } else if (0 > rssi2 && rssi2 >= -7){
+        keuzeFile = 0; //0 = geblaf
+        gain = 3.5;
+        Serial.print("222222222222222222");
+      }
+    }
+  }
+
+  if(freeFlag3 == false){
+    rssi3 = rssi3 + 30;
+    rssi3 = (int) rssi3 / 4;
+    Serial.print("sterkte signaal 3: ");
+    Serial.println(rssi3);
+
+    if(sticker3detected == true && sticker2detected == true && monsterDetected == true && strcmp(sender3,addrSender3) == 0){
+      Serial.println("stil BLAFFEN");
+      if(cardidSticker != 0){ // niet gelijk aan nul => er is een sticker gedetecteerd
+        keuzeFile = 1; //sticker geluid
+        gain = 3.5; 
+        cardidSticker = 0;
+      } else if (0 > rssi3 && rssi3 >= -7){
+        keuzeFile = 0; //0 = geblaf
+        gain = 3.5;
+        Serial.print("33333333333333333");
+      }
+    }
+  }
+
+  if(cardidSticker != 0){
+    keuzeFile = 1;
+    gain = 3.5; 
+    cardidSticker = 0;
+  }
+
+  //variabelen op nul zetten:
 
   if(freeFlag1 == false){
     free((char*)addrSender1);
@@ -385,7 +404,4 @@ void loop()
     free((char*)addrSender3);
     freeFlag3 = true;
   }
-
-  //q: where in my code did i make a mistake with the heap / freeing? //a: in the send function, you need to free the memory of the char* addrSender
-  //q: what do you mean with send function? //a: the send function in the espnow library
 }
