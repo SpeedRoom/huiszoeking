@@ -167,6 +167,8 @@
  .pio/libdeps/esp32doit-devkit-v1/Adafruit\ PN532/Adafruit_PN532.h \
  .pio/libdeps/esp32doit-devkit-v1/Adafruit\ BusIO/Adafruit_I2CDevice.h \
  .pio/libdeps/esp32doit-devkit-v1/Adafruit\ BusIO/Adafruit_SPIDevice.h \
+ .pio/libdeps/esp32doit-devkit-v1/PubSubClient/src/PubSubClient.h \
+ C:/Users/elias/.platformio/packages/framework-arduinoespressif32/cores/esp32/Client.h \
  C:/Users/elias/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src/WiFi.h \
  C:/Users/elias/.platformio/packages/framework-arduinoespressif32/cores/esp32/Print.h \
  C:/Users/elias/.platformio/packages/framework-arduinoespressif32/cores/esp32/IPv6Address.h \
@@ -218,13 +220,11 @@
  C:/Users/elias/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src/WiFiAP.h \
  C:/Users/elias/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src/WiFiScan.h \
  C:/Users/elias/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src/WiFiClient.h \
- C:/Users/elias/.platformio/packages/framework-arduinoespressif32/cores/esp32/Client.h \
  C:/Users/elias/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src/WiFiServer.h \
  C:/Users/elias/.platformio/packages/framework-arduinoespressif32/cores/esp32/Server.h \
  C:/Users/elias/.platformio/packages/framework-arduinoespressif32/libraries/WiFi/src/WiFiUdp.h \
  C:/Users/elias/.platformio/packages/framework-arduinoespressif32/cores/esp32/Udp.h \
  C:/Users/elias/.platformio/packages/framework-arduinoespressif32/cores/esp32/cbuf.h \
- .pio/libdeps/esp32doit-devkit-v1/PubSubClient/src/PubSubClient.h \
  lib/ESP8266Audio-master/src/AudioFileSourcePROGMEM.h \
  lib/ESP8266Audio-master/src/AudioFileSource.h \
  lib/ESP8266Audio-master/src/AudioStatus.h \
@@ -232,5 +232,4 @@
  lib/ESP8266Audio-master/src/AudioGeneratorMOD.h \
  lib/ESP8266Audio-master/src/AudioGenerator.h \
  lib/ESP8266Audio-master/src/AudioOutput.h \
- lib/ESP8266Audio-master/src/AudioOutputI2S.h src/enigma.h \
- C:/Users/elias/.platformio/packages/framework-arduinoespressif32/cores/esp32/esp32-hal-ledc.h
+ lib/ESP8266Audio-master/src/AudioOutputI2S.h src/enigma.h
